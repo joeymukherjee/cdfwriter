@@ -65,7 +65,7 @@ class CDFWriter (object):
         The data associated with the constants defined for the CDF file
     """
 
-    def __init__(self, prefix, outputdir):
+    def __init__(self, prefix, outputdir='./'):
         """
         Create CDF files with a "common" look.
 
@@ -415,7 +415,7 @@ class CDFWriter (object):
 
         return
 
-    def writeData(self):
+    def _writeData(self):
         """Write the data to the CDF file.
 
         Parameters
@@ -464,6 +464,29 @@ class CDFWriter (object):
                 except:
                     print ("Can't add", self._data[variable['name']], "to variable", variable['name'])
 
+    def cloneVariable (self, zVar, name=None, cloneData=False, newType=None, newAttrs = []):
+        if name is None:
+           name = zVar.name()
+        if newType is None:
+           newType = zVar.type()
+
+        self._variables.append({'name': name, 'dataType': newType,
+                                'sizes': zVar._dim_sizes(), 'dimVariances': zVar.dv(),
+                                'variance': zVar.rv(),
+                                'num_elements': zVar.nelems(),
+                                'compression': zVar.compress()[0],
+                                'compression_param': zVar.compress()[1]})
+        self._variable_attrs [name] = OrderedDict ()
+        attrs = zVar.attrs.items ()
+        for k, v in attrs:
+            self._variable_attrs [name][k] = v
+        for k, v in newAttrs:  # overwrite any new ones
+            self._variable_attrs [name][k] = v
+
+        if cloneData:
+           self._data[name] = zVar [name][...]
+        return
+
     def close(self):
         """Close the CDF file currently being processed.
 
@@ -487,7 +510,7 @@ class CDFWriter (object):
             new_filename = self._prefix + '_v' + self._version + '.cdf'
 
         if self._data:
-            self.writeData()
+            self._writeData()
 
         self._cdf.close()
 
