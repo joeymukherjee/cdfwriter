@@ -73,8 +73,8 @@ class CDFWriter (object):
         ----------
         prefix : str
             String prefix which is prepended to every CDF file generated.
-        outputdir : str
-            The location where the CDF file is to be placed.
+        outputdir : str, optional
+            The location where the CDF file is to be placed (default is the current directory).
         """
 
         self._prefix = prefix
@@ -465,6 +465,29 @@ class CDFWriter (object):
                     print ("Can't add", self._data[variable['name']], "to variable", variable['name'])
 
     def cloneVariable (self, zVar, name=None, cloneData=False, newType=None, newAttrs = []):
+        """Define a new variable to be included in the CDF file which is a copied from the named input variable 
+
+        Parameters
+        ----------
+        zVar : pycdf.Var
+            The name of the variable to copy from (clone) for the new variable being defined.
+
+            pycdf.Var refers a class which defines CDF variables of the type zVariable.
+        name : str, optional
+            The string identifier for the new variable being defined (default is None so the name value is cloned).
+        cloneData : Boolean, optional
+            A flag which tells if the data from the named variable (zVar) is to be copied to the new variable 
+            being defined (default is False).
+        newType : pycdf.const, optional
+            The data type of the new variable being defined (default is None so the data type value is cloned).
+
+            pycdf.const refers to the list of constants supported by CDF
+            when specifying a CDF data type for a variable.
+        newAttrs : CDF_Data_Type, optional
+            The list of attributes to be defined for the new variable, overwriting any of the attributes 
+            cloned from the named variable zVar (default is an empty list).
+        """
+
         if name is None:
            name = zVar.name()
         if newType is None:
@@ -573,11 +596,11 @@ class CDFWriter (object):
 
         return
 
-# Set the version number of this CDF (defaults to 0.0.0)
+# Set the version number of this CDF
     def setVersionNumber(self, version):
         """Set the version number for the CDF generated.
 
-        The default value is 0.0.0
+        The value is initially set to 0.0.0 by the class constructor
 
         Parameters
         ----------
@@ -620,11 +643,12 @@ class CDFWriter (object):
 
         return
 
-# Set the directory to write the CDFs (defaults to current directory)
+# Set the directory to write the CDFs
     def setOutputDirectory(self, outputDirectory):
         """Set the directory into which the CDF files are to be written.
 
-        If this method is not called, the default is the current directory.
+        If this method is not called, the CDF files are written in the directory 
+        specified when the class is instantiated.
 
         Parameters
         ----------
@@ -656,7 +680,7 @@ class CDFWriter (object):
     def setDoNotSplit(self, doNotSplit, boundary=datetime.timedelta(hours=6)):
         """Determines if CDF files are to be split on a pre-defined boundary.
 
-        The default is set to generate a single CDF file.
+        The default, as set by the class constructor, generates a single CDF file.
 
         Parameters
         ----------
@@ -707,7 +731,7 @@ class CDFWriter (object):
 
 # -------------------------------------------------------------------------------
     def addSupportVariableAttributes(self, variable_name, short_description='',
-                                     long_description='', units_string='unitless', format_string='', validmin=None,
+                                     long_description='', units_string=' ', format_string='', validmin=None,
                                      validmax=None, lablaxis=' ',
                                      si_conversion=' > ', scaleType='linear'
                                      ):
@@ -723,28 +747,32 @@ class CDFWriter (object):
         ----------
         variable_name : str
             The string identifier for the variable.
-        short_description : str
-            The string which describes the variable.
-        long_description : str
-            A catalog description of the variable.
-        units_string : str
+        short_description : str, optional
+            The string which describes the variable (default is empty string).
+        long_description : str, optional
+            A catalog description of the variable (default is empty string).
+        units_string : str, optional
             A string representing the units of the variable,
-            e.g., nT for magnetic field.
+            e.g., nT for magnetic field (default is ' ').
 
             Use a blank character, rather than "None" or "unitless",
             for variables that have no units (e.g., a ratio).
-        format_string : str
-            The output format used when extracting data values.
+        format_string : str, optional
+            The output format used when extracting data values (default is empty string).
 
             The magnitude and the number of significant figures needed
             should be carefully considered, with respect to the values
             of validmin and validmax parameters.
-        validmin : pycdf.const
+        validmin : pycdf.const, optional
             The minimum value for the variable that are expected over the
-            lifetime of a mission. The value must match variable's dataType.
-        validmax : pycdf.const
+            lifetime of a mission (default is None).
+
+            The value must match variable's dataType.
+        validmax : pycdf.const, optional
             The maximum value for the variable that are expected over the
-            lifetime of a mission. The value must match variable's dataType.
+            lifetime of a mission (default is None).
+
+            The value must match variable's dataType.
         lablaxis : str, optional
             A short string which can be used to label a y-axis for a plot
             or to provide a heading for a data listing (default is " ").
@@ -774,7 +802,7 @@ class CDFWriter (object):
 
 # -----------------------------------------------------------------------------------------
     def addPlotVariableAttributes(self, variable_name, short_description='',
-                                  long_description='', display_type='', units_string='unitless', format_string='',
+                                  long_description='', display_type='', units_string=' ', format_string='',
                                   lablaxis='', dataType=None, validmin=None, validmax=None,
                                   scaleType='linear', addFill=True):
         """Define the required attributes for a plot variable in the CDF file.
@@ -784,7 +812,7 @@ class CDFWriter (object):
                                 CATDESC, VAR_TYPE, DISPLAY_TYPE, SI_CONVERSION,
                                 DEPEND_0, and COORDINATE_SYSTEM.
 
-        FILLVAL is defaulted based upon the data type.
+        FILLVAL is defaulted based upon the dataType value specified.
         VAR_TYPE is defaulted to "data".
         SI_CONVERSION is defaulted to " > ".
         DEPEND_0 is defaulted to "Epoch".
@@ -794,37 +822,46 @@ class CDFWriter (object):
         ----------
         variable_name : str
             The string identifier for the variable.
-        short_description : str
-            The string which describes the variable.
-        long_description : str
-            A catalog description of the variable.
-        display_type : str
-            A string which tells automated software what type of plot to make.
+        short_description : str, optional
+            The string which describes the variable (default is empty string).
+        long_description : str, optional
+            A catalog description of the variable (default is empty string).
+        display_type : str, optional
+            A string which tells automated software what type of plot to make
+            (default is empty string).
 
             Examples include time_series, spectrogram, stack_plot, image.
-        units_string : str
+        units_string : str, optional
             A string representing the units of the variable,
-            e.g., nT for magnetic field.
+            e.g., nT for magnetic field (default is ' ').
 
             Use a blank character, rather than "None" or "unitless", for
             variables that have no units (e.g., a ratio or a direction cosine).
-        format_string : str
-            The output format used when extracting data values.
+        format_string : str, optional
+            The output format used when extracting data values
+            (default is empty string).
 
             The magnitude and the number of significant figures needed should
             be carefully considered, with respect to the values of validmin
             and validmax parameters.
-        lablaxis : str
+        lablaxis : str, optional
             A short string which can be used to label a y-axis for a plot
-            or to provide a heading for a data listing.
-        dataType : pycdf.const
-            The data type of the variable.
-        validmin : pycdf.const
+            or to provide a heading for a data listing (default is empty string).
+        dataType : pycdf.const, optional
+            The data type of the variable (default is None).
+
+            If the addFill flag is set to True, then the dataType parameter
+            must be specified; otherwise, an abort is issued by the code.
+        validmin : pycdf.const, optional
             The minimum value for the variable that are expected over the
-            lifetime of a mission. The value must match variable's dataType.
-        validmax : pycdf.const
+            lifetime of a mission (default is None).
+
+            The value must match dataType value specified.
+        validmax : pycdf.const, optional
             The maximum value for the variable that are expected over the
-            lifetime of a mission. The value must match variable's dataType.
+            lifetime of a mission (default is None).
+
+            The value must match dataType value specified.
         scaleType : str, optional
             A string which indicates whether the variable should have a linear
             or a log scale (default is 'linear').
@@ -834,7 +871,8 @@ class CDFWriter (object):
 
             FILLVAL is the number inserted in the CDF in place of data values
             that are known to be bad or missing.  The value used is dependent
-            upon the data type of the variable.
+            upon the dataType value specified and should match the data type
+            of the variable.
         """
 
         self.addVariableAttribute("FIELDNAM", variable_name, short_description)
