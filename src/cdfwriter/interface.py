@@ -4,15 +4,17 @@ __author__ = "Joey Mukherjee <joey@swri.org>"
 
 import os
 import random
-import numpy as np
+import datetime
 from collections import OrderedDict
+
 # from collections import Sequence
 from collections.abc import Sequence
+
+import numpy as np
 from spacepy import pycdf
-import datetime
 
 
-class CDFWriter (object):
+class CDFWriter(object):
     """
     A class used to hold information that is needed in order to create
     a common set of CDF files that are similar.
@@ -31,7 +33,7 @@ class CDFWriter (object):
     _prefix : str
         A string added at the beginning of the filename for every CDF
         file generated
-    _outputDirectory : str
+    _output_directory : str
         The name of the directory in which the CDF file is to placed
 
         If the directory does not already exists, it will be created.
@@ -45,7 +47,7 @@ class CDFWriter (object):
         The time range string as default for naming files (default: "%Y%m%d%H%M00")
     _version : str
         The version number of the CDF file created
-    _doNotSplit : Boolean
+    _do_not_split : Boolean
         Flag which specifies if the CDF file is to be split on a time boundary
     _boundary = datetime.timedelta
         Time interval at which the CDF file is to be split
@@ -57,13 +59,13 @@ class CDFWriter (object):
         The global attributes defined for the CDF file
     _variable_attrs : dictionary
         The attributes associated with the variables defined for the CDF file
-    _firstTime : CDF Epoch data type
+    _first_time : CDF Epoch data type
         The time associated with the first record in the CDF file
-    _lastTime : CDF Epoch data type
+    _last_time : CDF Epoch data type
         The time associated with the last record in the CDF file
     _data : dictionary
         The data associated with the plot variables defined for the CDF file
-    _constantData : dictionary
+    _constant_data : dictionary
         The data associated with the constants defined for the CDF file
     """
 
@@ -84,19 +86,20 @@ class CDFWriter (object):
         pycdf.lib.set_backward(False)
         if not outputdir.endswith(('/', '\\')):
             outputdir += '/'
-        self._outputDirectory = outputdir
+        self._output_directory = outputdir
 
         # Make sure directory exists or pycdf creates error
 
-        if not os.path.exists(self._outputDirectory):
-            os.makedirs(self._outputDirectory)
+        if not os.path.exists(self._output_directory):
+            os.makedirs(self._output_directory)
 
-        self._cdf_temp_name = outputdir + '__tmp' + str(os.getpid()) + '_' + str(random.randint(1, 65535)) + '.cdf'
+        self._cdf_temp_name = outputdir + '__tmp' + str(os.getpid()) + '_' \
+                              + str(random.randint(1, 65535)) + '.cdf'
         self._cdf = pycdf.CDF(self._cdf_temp_name, '')
         self._last_cdf_filename = None
         self._version = "0.0.0"
         self._file_naming_convention = "%Y%m%d%H%M00"
-        self._doNotSplit = True
+        self._do_not_split = True
         self._boundary = datetime.timedelta(hours=6)
 
         self._variables = []
@@ -104,10 +107,10 @@ class CDFWriter (object):
         self._global_attrs = OrderedDict()
         self._variable_attrs = {}
 
-        self._firstTime = None
-        self._lastTime = None
+        self._first_time = None
+        self._last_time = None
         self._data = {}
-        self._constantData = {}
+        self._constant_data = {}
 
     def __repr__(self):
         """Define the string representation of the CDFWriter class object.
@@ -125,7 +128,8 @@ class CDFWriter (object):
 
         values = {k: repr(v) for (k, v) in self.__dict__.items()}
 
-        return ('CDFWriter(name={_name}, prefix={_prefix}, outputdir={_outputdir})').format(**values)
+        return ('CDFWriter(name={_name}, prefix={_prefix}, \
+                 outputdir={_outputdir})').format(**values)
 
     def __iter__(self):
         """Define the iterator for the CDFWriter class object.
@@ -140,10 +144,12 @@ class CDFWriter (object):
             The CDFWriter custom iterator object
         """
 
-        return iter([('name', self._name), ('prefix', self._prefix), ('outputdir', self._outputDirectory)])
+        # OLD_WAY return iter([('name', self._name), ('prefix', self._prefix), \
+        return iter([('prefix', self._prefix), ('version', self._version), \
+                     ('outputdir', self._output_directory)])
 
-# Add an attributes which is global in nature (i.e. covers entire CDF file)
-    def addGlobalAttribute(self, name, value):
+    # Add an attributes which is global in nature (i.e. covers entire CDF file)
+    def add_global_attribute(self, name, value):
         """Define an attribute to be added to the global part of the CDF file.
 
         Parameters
@@ -166,10 +172,9 @@ class CDFWriter (object):
             raise TypeError('name parameter must be a str')
 
         self._global_attrs[name] = value
-        return
 
-# Add an attribute which is tied to a single variable (plot or support)
-    def addVariableAttribute(self, attribute_name, variable_name, value):
+    # Add an attribute which is tied to a single variable (plot or support)
+    def add_variable_attribute(self, attribute_name, variable_name, value):
         """Define an attribute to be added to a variable in the CDF file.
 
         Parameters
@@ -192,13 +197,12 @@ class CDFWriter (object):
         if variable_name not in self._variable_attrs:
             self._variable_attrs[variable_name] = OrderedDict()
         self._variable_attrs[variable_name][attribute_name] = value
-        return
 
-# Add a variable to the CDF
-    def addVariable(self, name, dataType, sizes=None,
-                    dimVariances=None, variance=True, num_elements=1,
-                    compression=pycdf.const.GZIP_COMPRESSION,
-                    compression_param=5, sparse=False):
+    # Add a variable to the CDF
+    def add_variable(self, name, data_type, sizes=None,
+                     dim_variances=None, variance=True, num_elements=1,
+                     compression=pycdf.const.GZIP_COMPRESSION,
+                     compression_param=5, sparse=False):
         """Define a variable to be included in the CDF file.
 
         pycdf.const refers to the list of constants supported by CDF
@@ -208,13 +212,13 @@ class CDFWriter (object):
         ----------
         name : str
             The string identifier for the variable.
-        dataType : pycdf.const
+        data_type : pycdf.const
             The data type of the variable.
         sizes : int, optional
             A python list which holds the size of each dimension defined
             for the constant.  The size must be greater than zero
             (default is None).
-        dimVariances : pycdf.const, optional
+        dim_variances : pycdf.const, optional
             A python list which holds the dimension variance for each
             dimension defined for the variable (default is None).
         variance : Boolean, optional
@@ -240,42 +244,46 @@ class CDFWriter (object):
         if not isinstance(name, str):
             raise TypeError('name parameter must be a str')
 
-        self._variables.append({'name': name, 'dataType': dataType,
-                                'sizes': sizes, 'dimVariances': dimVariances,
-                                'variance': variance,
-                                'num_elements': num_elements,
-                                'compression': compression,
-                                'compression_param': compression_param,
-                                'sparse': sparse,
-                                })
-        return
+        self._variables.append(
+            {
+                'name': name,
+                'dataType': data_type,
+                'sizes': sizes,
+                'dimVariances': dim_variances,
+                'variance': variance,
+                'num_elements': num_elements,
+                'compression': compression,
+                'compression_param': compression_param,
+                'sparse': sparse,
+            }
+        )
 
-# Add data to an already defined variable to the CDF
-# There are competing interests:
-# [NOTE: 1 cdf record and ALL cdf records are handled. Partial set of cdf
-#       records NOT handled. We may not want to handle partial sets.
-# ]
-#   1) input variable may be scalar or array
-#   2) array may contain 1 cdf record [or many cdf records] or all cdf records.
-#      As an example, Epoch is either a single, scalar value = 1 cdf record or
-#                     an array of single, scalar values = many cdf records.
-#                     These many records [can be a partial set of epochs or]
-#                     will represent all epochs.
-#                     Counts_per_accum is a vector = 1 cdf record or
-#                     an array of vectors = many cdf records.
-#
-# If input is scalar, then can set [variable_name] = data or [data]
-#                     and can append data or [data]
-# If input is array:
-#   For new variable_name: if array is 1 cdf record: must set = [data]
-#                          if array is many cdf records: set = data
-#                                                       but can set = [data]
-#                          [if array is partial set, set = [data]]
-#   For old variable: if array is 1 cdf record: append ( ,[data], axis=0)
-#                     if array is many cdf records, append ( ,data, axis=0)
-#                     [if array is partial set, append [data]]
+    # Add data to an already defined variable to the CDF
+    # There are competing interests:
+    # [NOTE: 1 cdf record and ALL cdf records are handled. Partial set of cdf
+    #       records NOT handled. We may not want to handle partial sets.
+    # ]
+    #   1) input variable may be scalar or array
+    #   2) array may contain 1 cdf record [or many cdf records] or all cdf records.
+    #      As an example, Epoch is either a single, scalar value = 1 cdf record or
+    #                     an array of single, scalar values = many cdf records.
+    #                     These many records [can be a partial set of epochs or]
+    #                     will represent all epochs.
+    #                     Counts_per_accum is a vector = 1 cdf record or
+    #                     an array of vectors = many cdf records.
+    #
+    # If input is scalar, then can set [variable_name] = data or [data]
+    #                     and can append data or [data]
+    # If input is array:
+    #   For new variable_name: if array is 1 cdf record: must set = [data]
+    #                          if array is many cdf records: set = data
+    #                                                       but can set = [data]
+    #                          [if array is partial set, set = [data]]
+    #   For old variable: if array is 1 cdf record: append ( ,[data], axis=0)
+    #                     if array is many cdf records, append ( ,data, axis=0)
+    #                     [if array is partial set, append [data]]
 
-    def addVariableData(self, variable_name, data, all_values=False):
+    def add_variable_data(self, variable_name, data, all_values=False):
         """Add data to the specified variable defined in the CDF file.
 
         Parameters
@@ -301,23 +309,23 @@ class CDFWriter (object):
             If one of the arguments is not of the correct type.
         ValueError
             If the variable name has not been previously defined
-            (a call to addVariable() has not been made)
+            (a call to add_variable() has not been made)
         """
 
-# for a variable called Epoch (assume this is the name of the time variable!)
+        # for a variable called Epoch (assume this is the name of the time variable!)
 
         if not isinstance(variable_name, str):
             raise TypeError('variable_name parameter must be a str')
         if not isinstance(all_values, bool):
             raise TypeError('all_values parameter must be a bool')
 
-        # Make sure variable has already been defined before we try to 
+        # Make sure variable has already been defined before we try to
         # add the data.
 
         list_of_all_variables = []
-        definedVariables = self._variables
+        defined_variables = self._variables
 
-        for variable in definedVariables:
+        for variable in defined_variables:
             list_of_all_variables.append(variable['name'])
 
         if variable_name not in list_of_all_variables:
@@ -329,30 +337,28 @@ class CDFWriter (object):
                 times = [data]
             else:
                 times = data
-            if self._firstTime is None:
-                self._firstTime = times[0]
-            self._lastTime = times[-1]
+            if self._first_time is None:
+                self._first_time = times[0]
+            self._last_time = times[-1]
 
         if all_values:
-           assert variable_name not in self._data
-           self._data[variable_name] = data
+            assert variable_name not in self._data
+            self._data[variable_name] = data
         else:
-           if variable_name not in self._data:
-              self._data[variable_name] = [data]
-           else:
-              self._data[variable_name].append (data)
+            if variable_name not in self._data:
+                self._data[variable_name] = [data]
+            else:
+                self._data[variable_name].append(data)
 
-        return
-
-# Add a constant to the CDF
-    def addConstant(self, name, dataType, sizes):
+    # Add a constant to the CDF
+    def add_constant(self, name, data_type, sizes):
         """Define a constant to be included in the CDF file.
 
         Parameters
         ----------
         name : str
             The string identifier for the constant.
-        dataType : pycdf.const
+        data_type : pycdf.const
             The data type of the constant.
 
             pycdf.const refers to the list of constants supported by CDF
@@ -370,11 +376,10 @@ class CDFWriter (object):
         if not isinstance(name, str):
             raise TypeError('name parameter must be a str')
 
-        self._constants.append({'name': name, 'dataType': dataType, 'sizes': sizes})
-        return
+        self._constants.append({'name': name, 'dataType': data_type, 'sizes': sizes})
 
-# Add data to an already defined constant to the CDF
-    def addConstantData(self, constant_name, data):
+    # Add data to an already defined constant to the CDF
+    def add_constant_data(self, constant_name, data):
         """Add data to the specified constant defined in the CDF file.
 
         Parameters
@@ -394,19 +399,19 @@ class CDFWriter (object):
             If one of the arguments is not of the correct type.
         ValueError
             If the constant variable named has not been previously defined
-            (a call to addConstant() has not been made)
+            (a call to add_constant() has not been made)
         """
 
         if not isinstance(constant_name, str):
             raise TypeError('constant_name parameter must be a str')
 
-        # Make sure constant have already been defined before we try to 
+        # Make sure constant have already been defined before we try to
         # add the data.
 
         list_of_all_constants = []
-        definedConstants = self._constants
+        defined_constants = self._constants
 
-        for constant in definedConstants:
+        for constant in defined_constants:
             list_of_all_constants.append(constant['name'])
 
         if constant_name not in list_of_all_constants:
@@ -415,14 +420,12 @@ class CDFWriter (object):
 
         # First time data being added?
 
-        if constant_name not in self._constantData:
-            self._constantData[constant_name] = [data]
+        if constant_name not in self._constant_data:
+            self._constant_data[constant_name] = [data]
         else:
-            self._constantData[constant_name].append (data)
+            self._constant_data[constant_name].append(data)
 
-        return
-
-    def _writeData(self):
+    def _write_data(self):
         """Write the data to the CDF file.
 
         Parameters
@@ -439,91 +442,119 @@ class CDFWriter (object):
 
         for constant in self._constants:
             if constant ['dataType'] == pycdf.const.CDF_CHAR:
-               n_elems = len (max(self._constantData[constant['name']][0], key=len))
+                n_elems = len(max(self._constant_data[constant['name']][0], key=len))
             else:
-               n_elems = 1
+                n_elems = 1
 
-            self._cdf.new(constant['name'], type=constant['dataType'], n_elements=n_elems,
-                          dims=constant['sizes'], dimVarys=None, recVary=False,
-                          compress=pycdf.const.NO_COMPRESSION)
+            self._cdf.new(
+                constant['name'],
+                type=constant['dataType'],
+                n_elements=n_elems,
+                dims=constant['sizes'],
+                dimVarys=None,
+                recVary=False,
+                compress=pycdf.const.NO_COMPRESSION
+            )
             if constant['name'] in self._variable_attrs:
                 for name, value in self._variable_attrs[constant['name']].items():
                     self._cdf[constant['name']].attrs[name] = value
-            if constant['name'] in self._constantData:
-                self._cdf[constant['name']] = self._constantData[constant['name']][0]
+            if constant['name'] in self._constant_data:
+                self._cdf[constant['name']] = self._constant_data[constant['name']][0]
 
         # Transfer the variables defined.
 
         for variable in self._variables:
             try:
-                self._cdf.new(variable['name'], type=variable['dataType'],
-                              dims=variable['sizes'],
-                              dimVarys=variable['dimVariances'],
-                              recVary=variable['variance'],
-                              compress=variable['compression'],
-                              compress_param=variable['compression_param'],
-                              sparse=variable ['sparse'])
-            except ValueError as e:
-                print ("Can't add", variable['name'], "to CDF - already exists", e)
+                self._cdf.new(
+                    variable['name'],
+                    type=variable['dataType'],
+                    dims=variable['sizes'],
+                    dimVarys=variable['dimVariances'],
+                    recVary=variable['variance'],
+                    compress=variable['compression'],
+                    compress_param=variable['compression_param'],
+                    sparse=variable ['sparse']
+                )
+            except ValueError as err:
+                print("Can't add", variable['name'], "to CDF - already exists", err)
             if variable['name'] in self._variable_attrs:
                 for name, value in self._variable_attrs[variable['name']].items():
                     try:
                         self._cdf[variable['name']].attrs[name] = value
-                    except ValueError as e:
-                        print ("Can't add attribute", value, "to attribute", name, "on", variable['name'], e)
+                    except ValueError as err_str:
+                        print("Can't add attribute", value, "to attribute", \
+                              name, "on", variable['name'], err_str)
             if variable['name'] in self._data:
                 try:
                     self._cdf[variable['name']] = self._data[variable['name']]
-                except ValueError as e:
-                    print ("Can't add", self._data[variable['name']], "to variable", variable['name'], e)
+                except ValueError as err_str:
+                    print("Can't add", self._data[variable['name']], \
+                          "to variable", variable['name'], err_str)
 
-    def cloneVariable (self, zVar, name=None, cloneData=False, newType=None, newAttrs = []):
-        """Define a new variable to be included in the CDF file which is a copied from the named input variable 
+    def clone_variable(self, zvar, name=None, clone_data=False, new_type=None,
+                       new_attrs=None):
+        """Define a new variable which is copied from the named input variable.
 
         Parameters
         ----------
-        zVar : pycdf.Var
+        zvar : pycdf.Var
             The name of the variable to copy from (clone) for the new variable being defined.
 
             pycdf.Var refers a class which defines CDF variables of the type zVariable.
         name : str, optional
-            The string identifier for the new variable being defined (default is None so the name value is cloned).
-        cloneData : Boolean, optional
-            A flag which tells if the data from the named variable (zVar) is to be copied to the new variable 
-            being defined (default is False).
-        newType : pycdf.const, optional
-            The data type of the new variable being defined (default is None so the data type value is cloned).
+            The string identifier for the new variable being defined
+            (default is None so the name value is cloned).
+        clone_data : Boolean, optional
+            A flag which tells if the data from the named variable (zvar) is to
+            be copied to the new variable being defined (default is False).
+        new_type : pycdf.const, optional
+            The data type of the new variable being defined
+            (default is None so the data type value is cloned).
 
             pycdf.const refers to the list of constants supported by CDF
             when specifying a CDF data type for a variable.
-        newAttrs : CDF_Data_Type, optional
-            The list of attributes to be defined for the new variable, overwriting any of the attributes 
-            cloned from the named variable zVar (default is an empty list).
+        new_attrs : CDF_Data_Type, optional
+            The list of attributes to be defined for the new variable,
+            overwriting any of the attributes cloned from the named variable
+            zvar (default is None so that no additional attributes are defined).
         """
 
         if name is None:
-           name = zVar.name()
-        if newType is None:
-           newType = zVar.type()
+            name = zvar.name()
+        if new_type is None:
+            new_type = zvar.type()
 
-        self._variables.append({'name': name, 'dataType': newType,
-                                'sizes': zVar._dim_sizes(), 'dimVariances': zVar.dv(),
-                                'variance': zVar.rv(),
-                                'num_elements': zVar.nelems(),
-                                'compression': zVar.compress()[0],
-                                'compression_param': zVar.compress()[1],
-                                'sparse': zVar.sparse (),
-                               })
-        self._variable_attrs [name] = OrderedDict ()
-        attrs = zVar.attrs.items ()
-        for k, v in attrs:
-            self._variable_attrs [name][k] = v
-        for k, v in newAttrs:  # overwrite any new ones
-            self._variable_attrs [name][k] = v
+        # This is a mutable value so what really happens is that this "default"
+        # list gets created as a persistent object, and every invocation of
+        # this method that doesn't specify a new_attrs param will be using
+        # that same list object — any changes to it will persist and be carried
+        # to every other invocation! That is why code is now written this way.
 
-        if cloneData:
-           self._data[name] = zVar [...]
-        return
+        if new_attrs is None:
+            new_attrs = []
+
+        self._variables.append(
+            {
+                'name': name,
+                'dataType': new_type,
+                'sizes': zvar._dim_sizes(),
+                'dimVariances': zvar.dv(),
+                'variance': zvar.rv(),
+                'num_elements': zvar.nelems(),
+                'compression': zvar.compress()[0],
+                'compression_param': zvar.compress()[1],
+                'sparse': zvar.sparse (),
+            }
+        )
+        self._variable_attrs[name] = OrderedDict()
+        attrs = zvar.attrs.items ()
+        for k, val in attrs:
+            self._variable_attrs[name][k] = val
+        for k, val in new_attrs:  # overwrite any new ones
+            self._variable_attrs[name][k] = val
+
+        if clone_data:
+            self._data[name] = zvar[...]
 
     def close(self):
         """Close the CDF file currently being processed.
@@ -536,39 +567,43 @@ class CDFWriter (object):
         No parameters defined.
         """
 
-        self.addGlobalAttribute('Generation_date',
-                                datetime.datetime.now().strftime("%Y%m%d"))
-        self.addGlobalAttribute('Data_version', "v" + self._version)
-        self.addGlobalAttribute('Logical_source', self._prefix)
+        self.add_global_attribute(
+            'Generation_date', datetime.datetime.now().strftime("%Y%m%d")
+        )
+        self.add_global_attribute('Data_version', "v" + self._version)
+        self.add_global_attribute('Logical_source', self._prefix)
 
-        if self._firstTime is not None:
-            new_filename = self._prefix + '_' + self._firstTime.strftime(self._file_naming_convention) + '_v' + self._version + '.cdf'
-            self.addGlobalAttribute('Logical_file_id', self._prefix + '_' + self._firstTime.strftime(self._file_naming_convention))
+        if self._first_time is not None:
+            new_filename = self._prefix + '_' \
+                           + self._first_time.strftime(self._file_naming_convention) \
+                           + '_v' + self._version + '.cdf'
+            self.add_global_attribute('Logical_file_id', self._prefix + '_' \
+                                    + self._first_time.strftime(self._file_naming_convention))
         else:
             new_filename = self._prefix + '_v' + self._version + '.cdf'
 
         if self._data:
-            self._writeData()
+            self._write_data()
 
         self._cdf.close()
 
         # Moves the CDF file from the temporary to the permanent location
         # with the correct filename.
 
-        if os.path.exists (self._outputDirectory + new_filename):
-            raise RuntimeError(self._outputDirectory + new_filename, 'already exists!')
-        else:
-            os.rename(self._cdf_temp_name, self._outputDirectory + new_filename)
+        if os.path.exists(self._output_directory + new_filename):
+            raise RuntimeError(self._output_directory + new_filename, 'already exists!')
+
+        os.rename(self._cdf_temp_name, self._output_directory + new_filename)
         if not self._data:
-            os.unlink(self._outputDirectory + new_filename)
+            os.unlink(self._output_directory + new_filename)
         else:
             self._last_cdf_filename = new_filename
 
         self._data = {}
-        self._firstTime = None
-        self._lastTime = None
+        self._first_time = None
+        self._last_time = None
 
-    def makeNewFile(self):
+    def make_new_file(self):
         """Create a new CDF file.
 
         If there is a CDF file already being processed, close that CDF file.
@@ -580,18 +615,17 @@ class CDFWriter (object):
 
         self.close()
 
-        self._cdf_temp_name = self._outputDirectory + '__tmp' + str(os.getpid()) + '_' + str(random.randint(1, 65535)) + '.cdf'
+        self._cdf_temp_name = self._output_directory + '__tmp' \
+                              + str(os.getpid()) + '_' \
+                              + str(random.randint(1, 65535)) + '.cdf'
         self._cdf = pycdf.CDF(self._cdf_temp_name, '')
 
         # OLD WAY  self._cdf = pycdf.CDF (self._cdf_temp_name, new_filename)
         # but changed since documentation says it would copy the data too and
         # self._last_cdf_filename is set by the close() method
 
-        return
-
-# Close the CDF record and start a new record
-
-    def closeRecord(self):
+    # Close the CDF record and start a new record
+    def close_record(self):
         """Close the current CDF record and start a new CDF record.
 
         If the CDF file is to be split at a pre-defined time boundary,
@@ -604,14 +638,14 @@ class CDFWriter (object):
         No parameters defined.
         """
 
-        if self._doNotSplit:
+        if self._do_not_split:
             return
-        if self._lastTime - self._firstTime >= self._boundary:
-            self.makeNewFile()
+        if self._last_time - self._first_time >= self._boundary:
+            self.make_new_file()
 
         return
 
-    def setFileNamingConvention(self, file_naming_convention):
+    def set_file_naming_convention(self, file_naming_convention):
         """Set the file naming convention for the time string on the end.
 
         Currently, this is "%Y%m%d%H%M00", and only can use the start time.
@@ -626,10 +660,8 @@ class CDFWriter (object):
 
         self._file_naming_convention = file_naming_convention
 
-        return
-
-# Set the version number of this CDF
-    def setVersionNumber(self, version):
+    # Set the version number of this CDF
+    def set_version_number(self, version):
         """Set the version number for the CDF generated.
 
         The value is initially set to 0.0.0 by the class constructor
@@ -655,36 +687,33 @@ class CDFWriter (object):
 
         # Split the version parameter into separate components.
 
-        versionNumbersList = version.split('.')
-        numLevels = len(versionNumbersList)
-        if numLevels != 3:
+        version_numbers_list = version.split('.')
+        num_levels = len(version_numbers_list)
+        if num_levels != 3:
             raise ValueError('version should have 3 levels (e.g. 4.2.0)')
 
-        else:
-            # Make sure each component represents a digit since we only use
-            # numbers for the version.
+        # Make sure each component represents a digit since we only use
+        # numbers for the version.
 
-            for j in range(numLevels):
-                vpart = versionNumbersList[j]
-                goodVal = vpart.isdigit()
-                if not goodVal:
-                    # print 'ERROR: ' + vpart + ' is invalid - must be an int.'
-                    raise TypeError('each level must consist only of integers')
+        for j in range(num_levels):
+            vpart = version_numbers_list[j]
+            good_val = vpart.isdigit()
+            if not good_val:
+                # print 'ERROR: ' + vpart + ' is invalid - must be an int.'
+                raise TypeError('each level must consist only of integers')
 
-            self._version = version
+        self._version = version
 
-        return
-
-# Set the directory to write the CDFs
-    def setOutputDirectory(self, outputDirectory):
+    # Set the directory to write the CDFs
+    def set_output_directory(self, output_directory):
         """Set the directory into which the CDF files are to be written.
 
-        If this method is not called, the CDF files are written in the directory 
+        If this method is not called, the CDF files are written in the directory
         specified when the class is instantiated.
 
         Parameters
         ----------
-        outputDirectory : str
+        output_directory : str
             The name of the directory where the CDF files are to be placed.
 
             If the directory does not already exists, it will be created.
@@ -692,31 +721,31 @@ class CDFWriter (object):
         Raises
         ------
         TypeError
-            If the outputDirectory argument is not of the correct type.
+            If the output_directory argument is not of the correct type.
         """
 
-        if not isinstance(outputDirectory, str):
-            raise TypeError('outputDirectory parameter must be a str')
+        if not isinstance(output_directory, str):
+            raise TypeError('output_directory parameter must be a str')
 
-        if not outputDirectory.endswith(('/', '\\')):
-            outputDirectory += '/'
-        self._outputDirectory = outputDirectory
+        if not output_directory.endswith(('/', '\\')):
+            output_directory += '/'
+        self._output_directory = output_directory
 
         # Make sure directory exists or pycdf creates error
 
-        if not os.path.exists(self._outputDirectory):
-            os.makedirs(self._outputDirectory)
-        return
+        if not os.path.exists(self._output_directory):
+            os.makedirs(self._output_directory)
 
-# Set this to true to never split the file based on six hours
-    def setDoNotSplit(self, doNotSplit, boundary=datetime.timedelta(hours=6)):
+    # Set this to true to never split the file based on six hours
+    def set_do_not_split(self, do_not_split,
+                         boundary=datetime.timedelta(hours=6)):
         """Determines if CDF files are to be split on a pre-defined boundary.
 
         The default, as set by the class constructor, generates a single CDF file.
 
         Parameters
         ----------
-        doNotSplit : Boolean
+        do_not_split : Boolean
             A flag which defines whether or not the CDF file(s) generated are
             to be split on a pre-defined time boundary (default is 6 hours).
 
@@ -734,19 +763,17 @@ class CDFWriter (object):
             If one of the arguments is not of the correct type.
         """
 
-        if not isinstance(doNotSplit, bool):
-            raise TypeError('doNotSplit parameter must be a bool')
+        if not isinstance(do_not_split, bool):
+            raise TypeError('do_not_split parameter must be a bool')
         if not isinstance(boundary, datetime.timedelta):
             raise TypeError('boundary parameter must be a datetime.timedelta value')
 
-        self._doNotSplit = doNotSplit
+        self._do_not_split = do_not_split
         self._boundary = boundary
-        return
 
-# Will return the name of the last CDF file created
-# NOTE: this will return None if no CDF file has been written yet
-
-    def getLastCDFFilename(self):
+    # Will return the name of the last CDF file created
+    # NOTE: this will return None if no CDF file has been written yet
+    def get_last_cdf_filename(self):
         """Return the name of the last CDF file produced.
 
         Parameters
@@ -762,12 +789,14 @@ class CDFWriter (object):
         return self._last_cdf_filename
 
 # -------------------------------------------------------------------------------
-    def addSupportVariableAttributes(self, variable_name, short_description='',
-                                     long_description='', units_string=' ', format_string='', validmin=None,
-                                     validmax=None, lablaxis=' ',
-                                     si_conversion=' > ', scaleType='linear'
-                                     ):
-        """Define the required attributes for a support variable in the CDF file.
+    def add_support_variable_attributes(self, variable_name,
+                                        short_description='',
+                                        long_description='', units_string=' ',
+                                        format_string='', validmin=None,
+                                        validmax=None, lablaxis=' ',
+                                        si_conversion=' > ', scale_type='linear'
+                                        ):
+        """Define required attributes for a support variable in the CDF file.
 
         These required attributes include FIELDNAM, VALIDMIN, VALIDMAX,
                                  LABLAXIS, UNITS, FORMAT, CATDESC,
@@ -799,12 +828,12 @@ class CDFWriter (object):
             The minimum value for the variable that are expected over the
             lifetime of a mission (default is None).
 
-            The value must match variable's dataType.
+            The value must match variable's data type.
         validmax : pycdf.const, optional
             The maximum value for the variable that are expected over the
             lifetime of a mission (default is None).
 
-            The value must match variable's dataType.
+            The value must match variable's data type.
         lablaxis : str, optional
             A short string which can be used to label a y-axis for a plot
             or to provide a heading for a data listing (default is " ").
@@ -814,37 +843,39 @@ class CDFWriter (object):
             (default is " > ").
 
             The string must contain 2 text fields separated by the delimiter >.
-        scaleType : str, optional
+        scale_type : str, optional
             A string which indicates whether the variable should have a linear
             or a log scale (default is 'linear').
         """
 
-        self.addVariableAttribute("FIELDNAM", variable_name, short_description)
-        self.addVariableAttribute("VALIDMIN", variable_name, validmin)
-        self.addVariableAttribute("VALIDMAX", variable_name, validmax)
-        if len (units_string) == 0:
-           units_string = 'unitless'
-        self.addVariableAttribute("UNITS", variable_name, units_string)
-        self.addVariableAttribute("FORMAT", variable_name, format_string)
-        self.addVariableAttribute("CATDESC", variable_name, long_description)
-        self.addVariableAttribute("VAR_TYPE", variable_name, "support_data")
-        self.addVariableAttribute("SI_CONVERSION", variable_name, si_conversion)
-        self.addVariableAttribute("LABLAXIS", variable_name, lablaxis)
-        self.addVariableAttribute("SCALETYP", variable_name, scaleType)
+        self.add_variable_attribute("FIELDNAM", variable_name, short_description)
+        self.add_variable_attribute("VALIDMIN", variable_name, validmin)
+        self.add_variable_attribute("VALIDMAX", variable_name, validmax)
+        if len(units_string) == 0:
+            units_string = 'unitless'
+        self.add_variable_attribute("UNITS", variable_name, units_string)
+        self.add_variable_attribute("FORMAT", variable_name, format_string)
+        self.add_variable_attribute("CATDESC", variable_name, long_description)
+        self.add_variable_attribute("VAR_TYPE", variable_name, "support_data")
+        self.add_variable_attribute("SI_CONVERSION", variable_name, si_conversion)
+        self.add_variable_attribute("LABLAXIS", variable_name, lablaxis)
+        self.add_variable_attribute("SCALETYP", variable_name, scale_type)
 
 # -----------------------------------------------------------------------------------------
-    def addPlotVariableAttributes(self, variable_name, short_description='',
-                                  long_description='', display_type='', units_string=' ', format_string='',
-                                  lablaxis='', dataType=None, validmin=None, validmax=None,
-                                  scaleType='linear', addFill=True, fillVal=None):
-        """Define the required attributes for a plot variable in the CDF file.
+    def add_plot_variable_attributes(self, variable_name, short_description='',
+                                     long_description='', display_type='',
+                                     units_string=' ', format_string='',
+                                     lablaxis='', data_type=None, validmin=None,
+                                     validmax=None, scale_type='linear',
+                                     add_fill=True, fill_val=None):
+        """Define required attributes for a plot variable in the CDF file.
 
         These required attributes include FIELDNAM, VALIDMIN, VALIDMAX,
                                 LABLAXIS, FILLVAL, SCALETYP, UNITS, FORMAT,
                                 CATDESC, VAR_TYPE, DISPLAY_TYPE, SI_CONVERSION,
                                 DEPEND_0, and COORDINATE_SYSTEM.
 
-        FILLVAL is defaulted based upon the dataType value specified.
+        FILLVAL is defaulted based upon the data_type value specified.
         VAR_TYPE is defaulted to "data".
         SI_CONVERSION is defaulted to " > ".
         DEPEND_0 is defaulted to "Epoch".
@@ -879,65 +910,67 @@ class CDFWriter (object):
         lablaxis : str, optional
             A short string which can be used to label a y-axis for a plot
             or to provide a heading for a data listing (default is empty string).
-        dataType : pycdf.const, optional
+        data_type : pycdf.const, optional
             The data type of the variable (default is None).
 
-            If the addFill flag is set to True, then the dataType parameter
+            If the add_fill flag is set to True, then the data_type parameter
             must be specified; otherwise, an abort is issued by the code.
         validmin : pycdf.const, optional
             The minimum value for the variable that are expected over the
             lifetime of a mission (default is None).
 
-            The value must match dataType value specified.
+            The value must match data_type value specified.
         validmax : pycdf.const, optional
             The maximum value for the variable that are expected over the
             lifetime of a mission (default is None).
 
-            The value must match dataType value specified.
-        scaleType : str, optional
+            The value must match data_type value specified.
+        scale_type : str, optional
             A string which indicates whether the variable should have a linear
             or a log scale (default is 'linear').
-        addFill : Boolean, optional
+        add_fill : Boolean, optional
             A flag to indicate if the FILLVAL attribute is to be set
             (default is True).
-        fillVal: pycdf.const, optional
+        fill_val: pycdf.const, optional
             The fill value defined.
 
             FILLVAL is the number inserted in the CDF in place of data values
             that are known to be bad or missing.  The value used is dependent
-            upon the dataType value specified and should match the data type
+            upon the data_type value specified and should match the data type
             of the variable.
         """
 
-        self.addVariableAttribute("FIELDNAM", variable_name, short_description)
-        self.addVariableAttribute("VALIDMIN", variable_name, validmin)
-        self.addVariableAttribute("VALIDMAX", variable_name, validmax)
-        self.addVariableAttribute("LABLAXIS", variable_name, lablaxis)
-        if addFill and fillVal == None:
-            if dataType == pycdf.const.CDF_DOUBLE:
-                self.addVariableAttribute("FILLVAL", variable_name, 1.0e31)
-            elif dataType == pycdf.const.CDF_FLOAT:
-                self.addVariableAttribute("FILLVAL", variable_name, 1.0e31)
-            elif dataType == pycdf.const.CDF_UINT1:
-                self.addVariableAttribute("FILLVAL", variable_name, 255)
-            elif dataType == pycdf.const.CDF_UINT2:
-                self.addVariableAttribute("FILLVAL", variable_name, 65535)
-            elif dataType == pycdf.const.CDF_INT4:
-                self.addVariableAttribute("FILLVAL", variable_name, 1)
-            elif dataType == pycdf.const.CDF_UINT4:
-                self.addVariableAttribute("FILLVAL", variable_name, 4294967294)
+        self.add_variable_attribute("FIELDNAM", variable_name, short_description)
+        self.add_variable_attribute("VALIDMIN", variable_name, validmin)
+        self.add_variable_attribute("VALIDMAX", variable_name, validmax)
+        self.add_variable_attribute("LABLAXIS", variable_name, lablaxis)
+        if add_fill and fill_val is None:
+            if data_type == pycdf.const.CDF_DOUBLE:
+                self.add_variable_attribute("FILLVAL", variable_name, 1.0e31)
+            elif data_type == pycdf.const.CDF_FLOAT:
+                self.add_variable_attribute("FILLVAL", variable_name, 1.0e31)
+            elif data_type == pycdf.const.CDF_UINT1:
+                self.add_variable_attribute("FILLVAL", variable_name, 255)
+            elif data_type == pycdf.const.CDF_UINT2:
+                self.add_variable_attribute("FILLVAL", variable_name, 65535)
+            elif data_type == pycdf.const.CDF_INT4:
+                self.add_variable_attribute("FILLVAL", variable_name, 1)
+            elif data_type == pycdf.const.CDF_UINT4:
+                self.add_variable_attribute("FILLVAL", variable_name, 4294967294)
             else:
-                valid_data_types = ('CDF_DOUBLE', 'CDF_FLOAT', 'CDF_UINT1', 'CDF_UINT2', 'CDF_INT4', 'CDF_UINT4')
-                print ('For {0} data_type must be one of {valids}'.format(variable_name, valids=repr(valid_data_types)))
+                valid_data_types = ('CDF_DOUBLE', 'CDF_FLOAT', 'CDF_UINT1', \
+                                    'CDF_UINT2', 'CDF_INT4', 'CDF_UINT4')
+                print('For {0} data_type must be one of {valids}'.format(
+                    variable_name, valids=repr(valid_data_types)))
                 os.abort()
-        elif fillVal is not None:
-            self.addVariableAttribute("FILLVAL", variable_name, fillVal)
-        self.addVariableAttribute("SCALETYP", variable_name, scaleType)
-        self.addVariableAttribute("UNITS", variable_name, units_string)
-        self.addVariableAttribute("FORMAT", variable_name, format_string)
-        self.addVariableAttribute("CATDESC", variable_name, long_description)
-        self.addVariableAttribute("VAR_TYPE", variable_name, "data")
-        self.addVariableAttribute("DISPLAY_TYPE", variable_name, display_type)
-        self.addVariableAttribute("SI_CONVERSION", variable_name, " > ")
-        self.addVariableAttribute("DEPEND_0", variable_name, "Epoch")
-        self.addVariableAttribute("COORDINATE_SYSTEM", variable_name, "BCS")
+        elif fill_val is not None:
+            self.add_variable_attribute("FILLVAL", variable_name, fill_val)
+        self.add_variable_attribute("SCALETYP", variable_name, scale_type)
+        self.add_variable_attribute("UNITS", variable_name, units_string)
+        self.add_variable_attribute("FORMAT", variable_name, format_string)
+        self.add_variable_attribute("CATDESC", variable_name, long_description)
+        self.add_variable_attribute("VAR_TYPE", variable_name, "data")
+        self.add_variable_attribute("DISPLAY_TYPE", variable_name, display_type)
+        self.add_variable_attribute("SI_CONVERSION", variable_name, " > ")
+        self.add_variable_attribute("DEPEND_0", variable_name, "Epoch")
+        self.add_variable_attribute("COORDINATE_SYSTEM", variable_name, "BCS")
