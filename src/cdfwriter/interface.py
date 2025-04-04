@@ -26,7 +26,7 @@ class CDFWriter(object):
     2) support - integer or real "attached" variables (e.g. constants)
 
     For this class, the name of the time variable is assumed to be
-    "Epoch".
+    "epoch".
 
     Attributes
     ----------
@@ -59,9 +59,9 @@ class CDFWriter(object):
         The global attributes defined for the CDF file
     _variable_attrs : dictionary
         The attributes associated with the variables defined for the CDF file
-    _first_time : CDF Epoch data type
+    _first_time : CDF epoch data type
         The time associated with the first record in the CDF file
-    _last_time : CDF Epoch data type
+    _last_time : CDF epoch data type
         The time associated with the last record in the CDF file
     _data : dictionary
         The data associated with the plot variables defined for the CDF file
@@ -265,7 +265,7 @@ class CDFWriter(object):
     # ]
     #   1) input variable may be scalar or array
     #   2) array may contain 1 cdf record [or many cdf records] or all cdf records.
-    #      As an example, Epoch is either a single, scalar value = 1 cdf record or
+    #      As an example, epoch is either a single, scalar value = 1 cdf record or
     #                     an array of single, scalar values = many cdf records.
     #                     These many records [can be a partial set of epochs or]
     #                     will represent all epochs.
@@ -312,7 +312,7 @@ class CDFWriter(object):
             (a call to add_variable() has not been made)
         """
 
-        # for a variable called Epoch (assume this is the name of the time variable!)
+        # for a variable called epoch (assume this is the name of the time variable!)
 
         if not isinstance(variable_name, str):
             raise TypeError('variable_name parameter must be a str')
@@ -332,7 +332,7 @@ class CDFWriter(object):
             raise ValueError('variable_name {0} must be one of {valids}'.format(
                 variable_name, valids=repr(list_of_all_variables)))
 
-        if variable_name == 'Epoch':
+        if variable_name == 'epoch':
             if not isinstance(data, (Sequence, np.ndarray)):
                 times = [data]
             else:
@@ -475,15 +475,16 @@ class CDFWriter(object):
                     compress_param=variable['compression_param'],
                     sparse=variable ['sparse']
                 )
-            except ValueError as err:
+            except Exception as err:
                 print("Can't add", variable['name'], "to CDF - already exists", err)
             if variable['name'] in self._variable_attrs:
                 for name, value in self._variable_attrs[variable['name']].items():
-                    try:
-                        self._cdf[variable['name']].attrs[name] = value
-                    except ValueError as err_str:
-                        print("Can't add attribute", value, "to attribute", \
-                              name, "on", variable['name'], err_str)
+                    if value is not None:
+                       try:
+                           self._cdf[variable['name']].attrs[name] = value
+                       except ValueError as err_str:
+                           print("Can't add attribute", value, "to attribute", \
+                                 name, "on", variable['name'], err_str)
             if variable['name'] in self._data:
                 try:
                     self._cdf[variable['name']] = self._data[variable['name']]
@@ -555,6 +556,11 @@ class CDFWriter(object):
 
         if clone_data:
             self._data[name] = zvar[...]
+            if name == 'epoch':
+               if self._first_time is None:
+                  self._first_time = zvar[0]
+               self._last_time = zvar[-1]
+
 
     def close(self):
         """Close the CDF file currently being processed.
@@ -878,7 +884,7 @@ class CDFWriter(object):
         FILLVAL is defaulted based upon the data_type value specified.
         VAR_TYPE is defaulted to "data".
         SI_CONVERSION is defaulted to " > ".
-        DEPEND_0 is defaulted to "Epoch".
+        DEPEND_0 is defaulted to "epoch".
         COORDINATE_SYSTEM is defaulted to "BCS".
 
         Parameters
@@ -972,5 +978,5 @@ class CDFWriter(object):
         self.add_variable_attribute("VAR_TYPE", variable_name, "data")
         self.add_variable_attribute("DISPLAY_TYPE", variable_name, display_type)
         self.add_variable_attribute("SI_CONVERSION", variable_name, " > ")
-        self.add_variable_attribute("DEPEND_0", variable_name, "Epoch")
+        self.add_variable_attribute("DEPEND_0", variable_name, "epoch")
         self.add_variable_attribute("COORDINATE_SYSTEM", variable_name, "BCS")
