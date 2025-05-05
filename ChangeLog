@@ -1,3 +1,4 @@
+1.1.4 - Fixed bug in set_generation_date_format routine
 1.1.3 - Added a set_generation_date_format routine
 1.1.2 - Fixed a bug in cloning string constants
 1.1.1 - Made it so attributes set to None didn't break and lower case epoch
