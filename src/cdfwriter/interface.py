@@ -685,9 +685,9 @@ class CDFWriter(object):
 
     def set_generation_date_format (self, date_format):
         if not isinstance(date_format, str):
-            raise TypeError('generation_data_format parameter must be a string')
+            raise TypeError('generation_date_format parameter must be a string')
 
-        self._generation_date_format = data_format
+        self._generation_date_format = date_format
         
     # Set the version number of this CDF
     def set_version_number(self, version):
