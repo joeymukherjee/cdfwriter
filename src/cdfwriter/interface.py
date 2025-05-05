@@ -684,7 +684,7 @@ class CDFWriter(object):
         self._file_naming_convention = file_naming_convention
 
     def set_generation_date_format (self, date_format):
-        if not isinstance(file_naming_convention, str):
+        if not isinstance(date_format, str):
             raise TypeError('generation_data_format parameter must be a string')
 
         self._generation_date_format = data_format
