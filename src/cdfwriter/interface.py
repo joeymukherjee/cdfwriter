@@ -45,6 +45,8 @@ class CDFWriter(object):
         The time range string as default for naming files (default: "%Y%m%d%H%M00")
     _version : str
         The version number of the CDF file created
+    _merge_if_exists : Boolean
+        Flag which specifies if the CDF file is to merge data if we try to write over it
     _do_not_split : Boolean
         Flag which specifies if the CDF file is to be split on a time boundary
     _boundary = datetime.timedelta
@@ -98,6 +100,7 @@ class CDFWriter(object):
         self._version = "0.0.0"
         self._file_naming_convention = "%Y%m%d%H%M00"
         self._do_not_split = True
+        self._merge_if_exists = False
         self._boundary = datetime.timedelta(hours=6)
         self._generation_date_format="%Y%m%d"
 
@@ -610,15 +613,35 @@ class CDFWriter(object):
 
         self._cdf.close()
 
+        full_path_final_cdf = self._output_directory + new_filename
         # Moves the CDF file from the temporary to the permanent location
         # with the correct filename.
 
-        if os.path.exists(self._output_directory + new_filename):
-            raise RuntimeError(self._output_directory + new_filename, 'already exists!')
+        if os.path.exists(full_path_final_cdf):
+           if self._merge_if_exists:
+              cdf_old = pycdf.CDF(full_path_final_cdf)
+              cdf_new = pycdf.CDF(self._cdf_temp_name)
+              cdf_new.readonly(False)
+              if self._data:
+                 epochs_combined = np.concatenate ((cdf_old ['epoch'], self._data['epoch']), axis=0)
+                 sorted_epochs_combined = np.argsort (epochs_combined, axis=0)
+                 for variable in self._variables:
+                     # TODO - we need to merge this data in...
+                     if variable['name'] in self._data:
+                         try:
+                             data_combined = np.concatenate ((cdf_old [variable['name']], self._data[variable['name']]), axis=0)
+                             cdf_new [variable['name']] = data_combined [sorted_epochs_combined]
+                         except ValueError as err_str:
+                             print("Can't add data ", self._data[variable['name']], \
+                                   "to variable", variable['name'], err_str)
+              cdf_old.close()
+              cdf_new.close()
+           else:
+              raise RuntimeError(full_path_final_cdf, 'already exists!')
 
-        os.rename(self._cdf_temp_name, self._output_directory + new_filename)
+        os.rename(self._cdf_temp_name, full_path_final_cdf)
         if not self._data:
-            os.unlink(self._output_directory + new_filename)
+            os.unlink(full_path_final_cdf)
         else:
             self._last_cdf_filename = new_filename
 
@@ -765,7 +788,13 @@ class CDFWriter(object):
         if not os.path.exists(self._output_directory):
             os.makedirs(self._output_directory)
 
+    def set_merge_if_exists(self, merge_if_exists):
     # Set this to true to never split the file based on six hours
+        if not isinstance(merge_if_exists, bool):
+            raise TypeError('merge_if_exists parameter must be a bool')
+
+        self._merge_if_exists = merge_if_exists
+
     def set_do_not_split(self, do_not_split,
                          boundary=datetime.timedelta(hours=6)):
         """Determines if CDF files are to be split on a pre-defined boundary.
