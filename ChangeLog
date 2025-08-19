@@ -1,3 +1,5 @@
+1.2.1 - Adding multiple files when having a boundary
+1.2 - Added getitem/setitem for interacting directly with vars and new timing name option
 1.1.6 - Added do_not_split and CDF merging to make a single CDF per day
 1.1.5 - Fixed bug in set_generation_date_format routine
 1.1.4 - Fixed bug in set_generation_date_format routine
