@@ -466,7 +466,10 @@ class CDFWriter(object):
             )
             if constant['name'] in self._variable_attrs:
                 for name, value in self._variable_attrs[constant['name']].items():
-                    self._cdf[constant['name']].attrs[name] = value
+                    if value is not None:
+                       self._cdf[constant['name']].attrs[name] = value
+                    else:
+                       print (f"{name} has no value set for constant {constant['name']}!")
             if constant['name'] in self._constant_data:
                 self._cdf[constant['name']] = self._constant_data[constant['name']][0]
 
